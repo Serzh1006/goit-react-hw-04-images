@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,6 +9,8 @@ import Loader from './loader/Loader';
 import Modal from './modal/Modal';
 import { fetchData } from 'services/api';
 import css from './app.module.css';
+
+//object settings for library 'toast'
 
 const messageObj = {
   position: 'top-center',
@@ -21,102 +23,128 @@ const messageObj = {
   theme: 'dark',
 };
 
-export class App extends Component {
-  state = {
-    posts: [],
-    isLoading: false,
-    total: 0,
-    page: 1,
-    query: '',
-    isOpen: false,
-    url: '',
-    tags: '',
-  };
+export const App = () => {
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [url, setUrl] = useState('');
+  const [tags, setTags] = useState('');
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { query, page, posts } = this.state;
-
-    if (prevState.query !== query || prevState.page !== page) {
-      try {
-        this.setState({ isLoading: true });
-        const response = await fetchData(query, page);
-        const { totalHits, hits } = response.data;
-        if (hits.length === 0) {
-          return toast.warning('Nothing was found for your search', messageObj);
-        }
-        if (prevState.query !== query || posts.length === 0) {
-          this.setState({ total: totalHits, posts: hits });
-          toast.info(
-            `We found ${totalHits} images for your request`,
-            messageObj
-          );
-          return;
-        }
-
-        if (prevState.page !== page) {
-          return this.setState({ posts: [...prevState.posts, ...hits] });
-        }
-      } catch (error) {
-        toast.error('Server error, please try again or later', messageObj);
-      } finally {
-        this.setState({ isLoading: false });
-      }
+  useEffect(() => {
+    if (query === '') {
+      return;
     }
-  }
+    try {
+      // setIsLoading(true);
 
-  clickMouse = (largeFormat, alt) => {
-    this.setState({ url: largeFormat, tags: alt });
-    this.openModal();
+      console.log(query, page);
+      const funcFetch = async () => {
+        const response = await fetchData(query, page);
+        console.log('response.data', response.data);
+        const { totalHits, hits } = response.data;
+        console.log(totalHits, hits);
+      };
+      if (query !== '' && page === 1) {
+        funcFetch();
+      }
+
+      // if (hits.length === 0) {
+      //   return toast.error('Nothing was found for your search', messageObj);
+      // }
+
+      // setTotal(totalHits);
+      // setPosts(hits);
+      // toast.info(`We found ${totalHits} images for your request`, messageObj);
+      // setPage(prevState => {
+      //   console.log(prevState !== page);
+      // });
+    } catch (error) {
+      console.log(error.message);
+      toast.error('Server error, please try again or later', messageObj);
+    } finally {
+      // setIsLoading(false);
+    }
+  }, [query, page]);
+
+  // async componentDidUpdate(prevProps, prevState) {
+  //   const { query, page, posts } = this.state;
+
+  //   if (prevState.query !== query || prevState.page !== page) {
+  //     try {
+  //       this.setState({ isLoading: true });
+  //       const response = await fetchData(query, page);
+  //       const { totalHits, hits } = response.data;
+  //       if (hits.length === 0) {
+  //         return toast.error('Nothing was found for your search', messageObj);
+  //       }
+  //       if (prevState.query !== query || posts.length === 0) {
+  //         this.setState({ total: totalHits, posts: hits });
+  //         toast.info(
+  //           `We found ${totalHits} images for your request`,
+  //           messageObj
+  //         );
+  //         return;
+  //       }
+
+  //       if (prevState.page !== page) {
+  //         return this.setState({ posts: [...prevState.posts, ...hits] });
+  //       }
+  //     } catch (error) {
+  //       toast.error('Server error, please try again or later', messageObj);
+  //     } finally {
+  //       this.setState({ isLoading: false });
+  //     }
+  //   }
+  // }
+
+  const clickMouse = (largeFormat, alt) => {
+    setUrl(largeFormat);
+    setTags(alt);
+    openModal();
   };
 
-  fetchToServer = searchValue => {
-    this.setState({ query: searchValue, page: 1, posts: [] });
+  const fetchToServer = searchValue => {
+    setQuery(searchValue);
+    setPage(1);
+    setPosts([]);
   };
 
-  loadMoreImg = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const loadMoreImg = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  openModal = () => {
-    this.setState({ isOpen: true });
+  const openModal = () => {
+    setIsOpen(true);
   };
 
-  closeModal = () => {
-    this.setState({ isOpen: false });
+  const closeModal = () => {
+    setIsOpen(false);
   };
 
-  render() {
-    const { posts, isLoading, total, isOpen } = this.state;
-    return (
-      <div className={css.app}>
-        <Searchbar onSubmit={this.fetchToServer} />
-        {posts.length > 0 && (
-          <ImageGallery dataPosts={posts} mouse={this.clickMouse} />
-        )}
-        {isLoading && <Loader />}
-        {posts.length < total && <Button moreImg={this.loadMoreImg} />}
-        {isOpen && (
-          <Modal
-            onClose={this.closeModal}
-            url={this.state.url}
-            tags={this.state.tags}
-          />
-        )}
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="dark"
-        />
-      </div>
-    );
-  }
-}
+  return (
+    <div className={css.app}>
+      <Searchbar onSubmit={fetchToServer} />
+      {posts.length > 0 && (
+        <ImageGallery dataPosts={posts} mouse={clickMouse} />
+      )}
+      {isLoading && <Loader />}
+      {posts.length < total && <Button moreImg={loadMoreImg} />}
+      {isOpen && <Modal onClose={closeModal} url={url} tags={tags} />}
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </div>
+  );
+};
