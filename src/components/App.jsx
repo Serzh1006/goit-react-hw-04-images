@@ -85,7 +85,7 @@ export const App = () => {
   };
 
   const loadMoreImg = () => {
-    setPage(page + 1);
+    setPage(prevState => prevState + 1);
   };
 
   const openModal = () => {
