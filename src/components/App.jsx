@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import Searchbar from './searchbar/Searchbar';
+import { Searchbar } from './searchbar/Searchbar';
 import ImageGallery from './imagegallery/Imagegallery';
 import Button from './button/Button';
 import Loader from './loader/Loader';
@@ -38,67 +38,38 @@ export const App = () => {
       return;
     }
     try {
-      // setIsLoading(true);
-
-      console.log(query, page);
       const funcFetch = async () => {
+        setIsLoading(true);
         const response = await fetchData(query, page);
-        console.log('response.data', response.data);
         const { totalHits, hits } = response.data;
-        console.log(totalHits, hits);
+        if (hits.length === 0) {
+          setIsLoading(false);
+          return toast.error('Nothing was found for your search', messageObj);
+        }
+        setTotal(totalHits);
+        setPosts(prevState => [...prevState, ...hits]);
+        setIsLoading(false);
+        if (page === 1) {
+          toast.info(
+            `We found ${totalHits} images for your request`,
+            messageObj
+          );
+        }
+        return;
       };
       if (query !== '' && page === 1) {
         funcFetch();
+        return;
       }
 
-      // if (hits.length === 0) {
-      //   return toast.error('Nothing was found for your search', messageObj);
-      // }
-
-      // setTotal(totalHits);
-      // setPosts(hits);
-      // toast.info(`We found ${totalHits} images for your request`, messageObj);
-      // setPage(prevState => {
-      //   console.log(prevState !== page);
-      // });
+      if (page > 1) {
+        funcFetch();
+        return;
+      }
     } catch (error) {
-      console.log(error.message);
       toast.error('Server error, please try again or later', messageObj);
-    } finally {
-      // setIsLoading(false);
     }
   }, [query, page]);
-
-  // async componentDidUpdate(prevProps, prevState) {
-  //   const { query, page, posts } = this.state;
-
-  //   if (prevState.query !== query || prevState.page !== page) {
-  //     try {
-  //       this.setState({ isLoading: true });
-  //       const response = await fetchData(query, page);
-  //       const { totalHits, hits } = response.data;
-  //       if (hits.length === 0) {
-  //         return toast.error('Nothing was found for your search', messageObj);
-  //       }
-  //       if (prevState.query !== query || posts.length === 0) {
-  //         this.setState({ total: totalHits, posts: hits });
-  //         toast.info(
-  //           `We found ${totalHits} images for your request`,
-  //           messageObj
-  //         );
-  //         return;
-  //       }
-
-  //       if (prevState.page !== page) {
-  //         return this.setState({ posts: [...prevState.posts, ...hits] });
-  //       }
-  //     } catch (error) {
-  //       toast.error('Server error, please try again or later', messageObj);
-  //     } finally {
-  //       this.setState({ isLoading: false });
-  //     }
-  //   }
-  // }
 
   const clickMouse = (largeFormat, alt) => {
     setUrl(largeFormat);
@@ -110,10 +81,11 @@ export const App = () => {
     setQuery(searchValue);
     setPage(1);
     setPosts([]);
+    setTotal(0);
   };
 
   const loadMoreImg = () => {
-    setPage(prevState => prevState + 1);
+    setPage(page + 1);
   };
 
   const openModal = () => {
