@@ -13,7 +13,7 @@ const Modal = ({ url, tags, onClose }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  });
 
   const clickOnBackdrop = e => {
     if (e.currentTarget === e.target) {
